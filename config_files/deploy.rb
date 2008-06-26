@@ -1,8 +1,5 @@
 
-my_servers = %w(
-    md6.org 
-    magnus.x-men.pl
-)
+my_servers = %w(md6.org magnus.x-men.pl)
 
 role :server do
     my_servers
