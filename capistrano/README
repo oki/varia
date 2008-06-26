@@ -1,0 +1,42 @@
+http://www.mathewabonyi.com/articles/category/capistrano
+http://weblog.jamisbuck.org/2007/5/11/capistrano-2-0-preview-2
+
+namespace :reload do
+  desc "Default reloading procedure"
+  task :default do
+    mongrels
+  end
+  desc "Reload an FCGI application"
+  task :fcgi, :roles => :app do
+    sudo "#{current_path}/script/process/reaper -a graceful -d #{current_path}/public/dispatch.fcgi"
+  end
+  desc "Reload an LSAPI application"
+  task :lsapi, :roles => :app do
+    sudo "/usr/local/litespeed/bin/lswsctrl restart"
+  end
+  desc "Give the mongrels a bath"
+  task :mongrels, :roles => :app do
+    restart_mongrel_cluster
+  end
+end
+
+desc "Generate a maintenance.html to disable requests to the application."
+deploy.web.task :disable, :roles => :web do
+  remote_path = "#{shared_path}/system/maintenance.html"
+  on_rollback { run "rm #{remote_path}" }
+  template = File.read(disable_template)
+  deadline, reason = ENV["UNTIL"], ENV["REASON"]
+  maintenance = ERB.new(template).result(binding)
+  put maintenance, "#{remote_path}", :mode => 0644
+end
+
+desc "Re-enable the web server by deleting any maintenance file."
+deploy.web.task :enable, :roles => :web do
+  run "rm #{shared_path}/system/maintenance.html"
+end
+
+before "deploy:restart", "fix:permissions"
+before "deploy:migrate", "db:backup"
+after "deploy:symlink", "deploy:cleanup"
+after "deploy:update_code", "deploy:web:disable"
+after "deploy:restart", "deploy:web:enable"

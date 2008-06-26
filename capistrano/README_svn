@@ -1,0 +1,1 @@
+svn propset svn:externals "oki_capistrano_tasks svn://md6.org/deployment/trunk/capistrano/oki_capistrano_tasks" vendor/plugins
